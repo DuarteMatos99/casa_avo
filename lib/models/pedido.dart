@@ -17,4 +17,20 @@ class Pedido {
   String toString() {
     return 'Pedido(cliente: $cliente, prato: $prato, bebida: $bebida, sobremesa: $sobremesa)';
   }
+
+  // Converte Objeto para JSON (para guardar)
+  Map<String, dynamic> toJson() => {
+    'cliente': cliente,
+    'prato': prato,
+    'bebida': bebida,
+    'sobremesa': sobremesa,
+  };
+
+  // Converte JSON para Objeto (para ler)
+  factory Pedido.fromJson(Map<String, dynamic> json) => Pedido(
+    cliente: json['cliente'],
+    prato: json['prato'],
+    bebida: json['bebida'],
+    sobremesa: json['sobremesa'],
+  );
 }

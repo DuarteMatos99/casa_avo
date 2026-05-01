@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:casa_avo/models/pedido.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert'; // Necessário para o jsonEncode
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -33,7 +35,42 @@ class _HomePageState extends State<HomePage> {
   int _indiceAtual = 0;
 
   // onde irao ser guardados os pedidos
-  final List<Pedido> _listaDePedidos = [];
+  List<Pedido> _listaDePedidos = [];
+
+  // Vai buscar os dados guardados no local storage - INICIO +
+  Future<void> _guardarDados() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Transformamos a lista de objetos numa String JSON
+    final String dadosString = jsonEncode(
+      _listaDePedidos.map((p) => p.toJson()).toList(),
+    );
+    await prefs.setString('meus_pedidos', dadosString);
+  }
+
+  Future<void> _carregarDados() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? dadosString = prefs.getString('meus_pedidos');
+
+    if (dadosString != null) {
+      // Decodificamos a string para uma lista dinâmica
+      final List<dynamic> jsonDecoded = jsonDecode(dadosString);
+
+      setState(() {
+        // Convertemos cada item do JSON para um objeto Pedido
+        _listaDePedidos = jsonDecoded
+            .map((item) => Pedido.fromJson(item))
+            .toList();
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarDados(); // Carrega o que estava guardado
+  }
+
+  // Vai buscar os dados guardados no local storage - FIM +
 
   //VIEW principal da app
   @override
@@ -130,6 +167,9 @@ class _HomePageState extends State<HomePage> {
                 _listaDePedidos.removeAt(index);
               });
 
+              //armezanar os dados no storage local
+              _guardarDados();
+
               // Um feedback visual de que foi apagado
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -156,6 +196,10 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       });
+
+      //armezanar os dados no storage local
+      _guardarDados();
+
       _clienteController.clear();
       _pratoController.clear();
       _bebidaController.clear();
