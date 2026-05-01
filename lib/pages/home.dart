@@ -10,9 +10,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // formularios no flutter precisam de uma key global
   final _formKey = GlobalKey<FormState>();
 
-  // controladores
+  // controladores dos TextFormFields
   final _clienteController = TextEditingController();
   final _pratoController = TextEditingController();
   final _bebidaController = TextEditingController();
@@ -28,10 +29,13 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  int _indiceAtual = 0; // Começa na primeira aba (Pedir)
+  // indice necessario para alterar os separadores das views
+  int _indiceAtual = 0;
 
+  // onde irao ser guardados os pedidos
   final List<Pedido> _listaDePedidos = [];
 
+  //VIEW principal da app
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,20 +106,42 @@ class _HomePageState extends State<HomePage> {
 
   // Widget da Lista
   Widget _buildLista() {
-    return _listaDePedidos.isEmpty
-        ? const Center(child: Text("Nenhum pedido feito ainda."))
-        : ListView.builder(
-            itemCount: _listaDePedidos.length,
-            itemBuilder: (context, index) {
-              final item = _listaDePedidos[index];
-              return ListTile(
-                title: Text(item.cliente),
-                subtitle: Text(
-                  "Prato: ${item.prato}\nBebida: ${item.bebida}\nSobremesa: ${item.sobremesa}",
+    if (_listaDePedidos.isEmpty) {
+      return const Center(child: Text("Ainda não há pedidos."));
+    }
+
+    return ListView.builder(
+      itemCount: _listaDePedidos.length,
+      itemBuilder: (context, index) {
+        final pedido = _listaDePedidos[index];
+
+        return ListTile(
+          title: Text(pedido.cliente),
+
+          subtitle: Text(
+            "Prato: ${pedido.prato}\nBebida: ${pedido.bebida}\nSobremesa: ${pedido.sobremesa}",
+          ),
+          // O botão de apagar entra aqui:
+          trailing: IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+            onPressed: () {
+              // Precisamos do setState para a tela atualizar logo
+              setState(() {
+                _listaDePedidos.removeAt(index);
+              });
+
+              // Um feedback visual de que foi apagado
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Pedido removido!"),
+                  duration: Duration(seconds: 1),
                 ),
               );
             },
-          );
+          ),
+        );
+      },
+    );
   }
 
   void _salvarPedido() {
