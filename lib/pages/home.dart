@@ -160,27 +160,42 @@ class _HomePageState extends State<HomePage> {
           // O botão de apagar entra aqui:
           trailing: IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-            onPressed: () {
-              // Precisamos do setState para a tela atualizar logo
-              setState(() {
-                _listaDePedidos.removeAt(index);
-              });
-
-              //armezanar os dados no storage local
-              _guardarDados();
-
-              // Um feedback visual de que foi apagado
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Pedido removido!"),
-                  duration: Duration(seconds: 1),
-                ),
-              );
-            },
+            onPressed: () => _confirmarApagar(index),
           ),
         );
       },
     );
+  }
+
+  Future<void> _confirmarApagar(int index) async {
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Apagar pedido'),
+        content: const Text('Tens a certeza que queres apagar este pedido?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Apagar', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmado != true) return;
+
+    setState(() => _listaDePedidos.removeAt(index));
+    _guardarDados();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pedido removido!'), duration: Duration(seconds: 1)),
+      );
+    }
   }
 
   String _tempoRelativo(DateTime data) {
