@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:casa_avo/models/pedido.dart';
 import 'package:casa_avo/models/ementa.dart';
@@ -14,7 +15,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   // formularios no flutter precisam de uma key global
   final _formKey = GlobalKey<FormState>();
 
@@ -29,6 +30,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   // limpar os controladores quando o widget é destruído
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _temporizadorPurga?.cancel();
     _clienteController.dispose();
     _pratoController.dispose();
     _bebidaController.dispose();
@@ -36,6 +39,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _paginaControlador.dispose();
     _ementaTabControlador.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState estado) {
+    if (estado == AppLifecycleState.resumed) _purgarExpirados();
   }
 
   // indice necessario para alterar os separadores das views
@@ -48,6 +56,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   Key _chaveFormulario = UniqueKey();
   int? _indicePedidoEmEdicao;
+  Timer? _temporizadorPurga;
+
+  static const _limiteExpiracao = Duration(hours: 8);
 
   // Vai buscar os dados guardados no local storage - INICIO +
   Future<void> _guardarDados() async {
@@ -66,11 +77,29 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     if (dadosString != null) {
       // Decodificamos a string para uma lista dinâmica
       final List<dynamic> jsonDecoded = jsonDecode(dadosString);
+      final agora = DateTime.now();
+      final lista = jsonDecoded
+          .map((item) => Pedido.fromJson(item))
+          .where((p) => agora.difference(p.dataCriacao) < _limiteExpiracao)
+          .toList();
 
+      if (!mounted) return;
       setState(() {
-        // Convertemos cada item do JSON para um objeto Pedido
-        _listaDePedidos = jsonDecoded.map((item) => Pedido.fromJson(item)).toList();
+        _listaDePedidos = lista;
       });
+      await _guardarDados();
+    }
+  }
+
+  void _purgarExpirados() {
+    if (!mounted) return;
+    final agora = DateTime.now();
+    final lista = _listaDePedidos
+        .where((p) => agora.difference(p.dataCriacao) < _limiteExpiracao)
+        .toList();
+    if (lista.length != _listaDePedidos.length) {
+      setState(() => _listaDePedidos = lista);
+      _guardarDados();
     }
   }
 
@@ -92,9 +121,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _ementaTabControlador = TabController(length: 3, vsync: this);
     _carregarDados(); // Carrega o que estava guardado
     _carregarEmenta();
+    _temporizadorPurga = Timer.periodic(
+      _limiteExpiracao,
+      (_) => _purgarExpirados(),
+    );
   }
 
   // Vai buscar os dados guardados no local storage - FIM +
@@ -112,7 +146,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+              colors: [Color(0xFF8C292C), Color(0xFF5C1A1C)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -185,14 +219,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       labelText: rotulo,
       prefixIcon: Icon(icone),
       filled: true,
-      fillColor: Colors.grey[100],
+      fillColor: const Color(0xFFEAE6DC),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.amber, width: 2),
+        borderSide: const BorderSide(color: Color(0xFF8C292C), width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
     );
@@ -258,8 +292,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber,
-                    foregroundColor: Colors.black87,
+                    backgroundColor: const Color(0xFF8C292C),
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -428,7 +462,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Container(width: 5, color: Colors.amber),
+                        Container(width: 5, color: const Color(0xFF8C292C)),
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
@@ -437,14 +471,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                               children: [
                                 CircleAvatar(
                                   radius: 22,
-                                  backgroundColor: Colors.amber[100],
+                                  backgroundColor: const Color(0xFFEDD5D5),
                                   child: Text(
                                     pedido.cliente.isNotEmpty
                                         ? pedido.cliente[0].toUpperCase()
                                         : '?',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: Color(0xFFD97706),
+                                      color: Color(0xFF8C292C),
                                       fontSize: 18,
                                     ),
                                   ),
@@ -615,7 +649,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
     return Card(
       margin: EdgeInsets.zero,
-      color: Colors.amber[50],
+      color: const Color(0xFFF5F0E8),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: abrirResumoCompleto,
@@ -700,8 +734,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       children: [
         TabBar(
           controller: _ementaTabControlador,
-          labelColor: Colors.amber[800],
-          indicatorColor: Colors.amber,
+          labelColor: const Color(0xFF8C292C),
+          indicatorColor: const Color(0xFF8C292C),
           tabs: const [
             Tab(icon: Icon(Icons.restaurant), text: 'Pratos'),
             Tab(icon: Icon(Icons.local_bar), text: 'Bebidas'),
@@ -794,12 +828,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   Widget _chip(IconData icone, String texto) {
     return Chip(
-      avatar: Icon(icone, size: 14, color: const Color(0xFFD97706)),
+      avatar: Icon(icone, size: 14, color: const Color(0xFF8C292C)),
       label: Text(texto, style: const TextStyle(fontSize: 12)),
       padding: EdgeInsets.zero,
       visualDensity: VisualDensity.compact,
-      side: const BorderSide(color: Color(0xFFFDE68A)),
-      backgroundColor: const Color(0xFFFFFBEB),
+      side: const BorderSide(color: Color(0xFFD4C9B0)),
+      backgroundColor: const Color(0xFFF5F0E8),
     );
   }
 
@@ -1187,7 +1221,7 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                         onTap: () => setEstado(() => selecionados[i] = !selecionados[i]),
                         leading: Checkbox(
                           value: selecionados[i],
-                          activeColor: Colors.amber,
+                          activeColor: const Color(0xFF8C292C),
                           onChanged: (val) =>
                               setEstado(() => selecionados[i] = val ?? false),
                         ),
@@ -1201,7 +1235,7 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                           icon: Icon(
                             Icons.edit_outlined,
                             size: 18,
-                            color: indiceEmEdicao == i ? Colors.amber : Colors.blueGrey,
+                            color: indiceEmEdicao == i ? const Color(0xFF8C292C) : Colors.blueGrey,
                           ),
                           onPressed: () => setEstado(() {
                             indiceEmEdicao = i;
@@ -1238,8 +1272,8 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                           const SizedBox(width: 8),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.amber,
-                              foregroundColor: Colors.black87,
+                              backgroundColor: const Color(0xFF8C292C),
+                              foregroundColor: Colors.white,
                             ),
                             onPressed: confirmarEdicao,
                             child: const Text('OK'),
@@ -1254,8 +1288,8 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                         width: double.infinity,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.amber,
-                            foregroundColor: Colors.black87,
+                            backgroundColor: const Color(0xFF8C292C),
+                            foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -1300,14 +1334,14 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                     hintText: 'Novo item...',
                     prefixIcon: const Icon(Icons.edit_note, color: Colors.grey),
                     filled: true,
-                    fillColor: Colors.grey[100],
+                    fillColor: const Color(0xFFEAE6DC),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.amber, width: 2),
+                      borderSide: const BorderSide(color: Color(0xFF8C292C), width: 2),
                     ),
                     contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   ),
@@ -1320,7 +1354,7 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.add_circle, color: Colors.amber),
+                icon: const Icon(Icons.add_circle, color: Color(0xFF8C292C)),
                 onPressed: () {
                   if (_controlador.text.isNotEmpty) {
                     widget.onAdicionar(_controlador.text);
@@ -1333,9 +1367,9 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8C292C)),
                       )
-                    : const Icon(Icons.document_scanner, color: Colors.amber),
+                    : const Icon(Icons.document_scanner, color: Color(0xFF8C292C)),
                 onPressed: _carregando ? null : _importarDaImagem,
                 tooltip: 'Importar da imagem',
               ),
