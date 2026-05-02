@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:casa_avo/models/pedido.dart';
+import 'package:casa_avo/models/ementa.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert'; // Necessário para o jsonEncode
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,6 +38,10 @@ class _HomePageState extends State<HomePage> {
   // onde irao ser guardados os pedidos
   List<Pedido> _listaDePedidos = [];
 
+  Ementa _ementa = Ementa();
+
+  Key _chaveFormulario = UniqueKey();
+
   // Vai buscar os dados guardados no local storage - INICIO +
   Future<void> _guardarDados() async {
     final prefs = await SharedPreferences.getInstance();
@@ -57,9 +62,22 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         // Convertemos cada item do JSON para um objeto Pedido
-        _listaDePedidos = jsonDecoded
-            .map((item) => Pedido.fromJson(item))
-            .toList();
+        _listaDePedidos = jsonDecoded.map((item) => Pedido.fromJson(item)).toList();
+      });
+    }
+  }
+
+  Future<void> _guardarEmenta() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('ementa', jsonEncode(_ementa.toJson()));
+  }
+
+  Future<void> _carregarEmenta() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? dadosString = prefs.getString('ementa');
+    if (dadosString != null) {
+      setState(() {
+        _ementa = Ementa.fromJson(jsonDecode(dadosString));
       });
     }
   }
@@ -68,6 +86,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _carregarDados(); // Carrega o que estava guardado
+    _carregarEmenta();
   }
 
   // Vai buscar os dados guardados no local storage - FIM +
@@ -83,7 +102,11 @@ class _HomePageState extends State<HomePage> {
       ),
 
       // O corpo agora muda conforme o índice
-      body: _indiceAtual == 0 ? _buildFormulario() : _buildLista(),
+      body: _indiceAtual == 0
+          ? _buildFormulario()
+          : _indiceAtual == 1
+              ? _buildLista()
+              : _buildEmenta(),
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _indiceAtual, // Qual aba está marcada
@@ -95,6 +118,7 @@ class _HomePageState extends State<HomePage> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.edit_note), label: 'Pedir'),
           BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Pedidos'),
+          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Ementa'),
         ],
       ),
     );
@@ -107,37 +131,66 @@ class _HomePageState extends State<HomePage> {
       padding: const EdgeInsets.all(16.0),
       child: Form(
         key: _formKey,
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _clienteController,
-              inputFormatters: [UpperCaseFirstLetterFormatter()],
-              decoration: const InputDecoration(labelText: 'Para quem é?'),
-            ),
-            TextFormField(
-              controller: _pratoController,
-              inputFormatters: [UpperCaseFirstLetterFormatter()],
-              decoration: const InputDecoration(labelText: 'Prato'),
-            ),
-            TextFormField(
-              controller: _bebidaController,
-              inputFormatters: [UpperCaseFirstLetterFormatter()],
-              decoration: const InputDecoration(labelText: 'Bebida'),
-            ),
-            TextFormField(
-              controller: _doceController,
-              inputFormatters: [UpperCaseFirstLetterFormatter()],
-              decoration: const InputDecoration(labelText: 'Sobremesa'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed:
-                  _salvarPedido, // Criamos uma função separada para limpar o build
-              child: const Text("Enviar Pedido"),
-            ),
-          ],
+        child: KeyedSubtree(
+          key: _chaveFormulario,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _clienteController,
+                inputFormatters: [UpperCaseFirstLetterFormatter()],
+                decoration: const InputDecoration(labelText: 'Para quem é?'),
+              ),
+              _campoAutoComplete(
+                opcoes: _ementa.pratos,
+                controlador: _pratoController,
+                rotulo: 'Prato',
+              ),
+              _campoAutoComplete(
+                opcoes: _ementa.bebidas,
+                controlador: _bebidaController,
+                rotulo: 'Bebida',
+              ),
+              _campoAutoComplete(
+                opcoes: _ementa.sobremesas,
+                controlador: _doceController,
+                rotulo: 'Sobremesa',
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _salvarPedido,
+                child: const Text("Enviar Pedido"),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _campoAutoComplete({
+    required List<String> opcoes,
+    required TextEditingController controlador,
+    required String rotulo,
+  }) {
+    return Autocomplete<String>(
+      optionsBuilder: (TextEditingValue value) {
+        if (value.text.isEmpty) return const Iterable<String>.empty();
+        return opcoes.where(
+          (o) => o.toLowerCase().contains(value.text.toLowerCase()),
+        );
+      },
+      onSelected: (String selecao) {
+        controlador.text = selecao;
+      },
+      fieldViewBuilder: (context, campoControlador, focoNo, aoSubmeter) {
+        return TextFormField(
+          controller: campoControlador,
+          focusNode: focoNo,
+          inputFormatters: [UpperCaseFirstLetterFormatter()],
+          decoration: InputDecoration(labelText: rotulo),
+          onChanged: (val) => controlador.text = val,
+        );
+      },
     );
   }
 
@@ -169,9 +222,10 @@ class _HomePageState extends State<HomePage> {
                         Text(
                           pedido.cliente,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            decoration: pedido.entregue ? TextDecoration.lineThrough : null,
-                            fontWeight: FontWeight.bold,
-                          ),
+                                decoration:
+                                    pedido.entregue ? TextDecoration.lineThrough : null,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                         const SizedBox(height: 6),
                         _campoIcone(Icons.restaurant, pedido.prato),
@@ -192,7 +246,9 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       IconButton(
                         icon: Icon(
-                          pedido.entregue ? Icons.check_circle : Icons.check_circle_outline,
+                          pedido.entregue
+                              ? Icons.check_circle
+                              : Icons.check_circle_outline,
                           color: pedido.entregue ? Colors.green : Colors.grey,
                         ),
                         onPressed: () => _confirmarEntregue(index),
@@ -209,6 +265,80 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildEmenta() {
+    return DefaultTabController(
+      length: 3,
+      child: Column(
+        children: [
+          TabBar(
+            labelColor: Colors.amber[800],
+            indicatorColor: Colors.amber,
+            tabs: const [
+              Tab(icon: Icon(Icons.restaurant), text: 'Pratos'),
+              Tab(icon: Icon(Icons.local_bar), text: 'Bebidas'),
+              Tab(icon: Icon(Icons.cake), text: 'Sobremesas'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _SecaoEmenta(
+                  itens: _ementa.pratos,
+                  onAdicionar: (item) {
+                    if (!_ementa.pratos.contains(item)) {
+                      setState(() {
+                        _ementa = _ementa.copiarCom(pratos: [..._ementa.pratos, item]);
+                      });
+                      _guardarEmenta();
+                    }
+                  },
+                  onRemover: (index) {
+                    final novos = List<String>.from(_ementa.pratos)..removeAt(index);
+                    setState(() => _ementa = _ementa.copiarCom(pratos: novos));
+                    _guardarEmenta();
+                  },
+                ),
+                _SecaoEmenta(
+                  itens: _ementa.bebidas,
+                  onAdicionar: (item) {
+                    if (!_ementa.bebidas.contains(item)) {
+                      setState(() {
+                        _ementa = _ementa.copiarCom(bebidas: [..._ementa.bebidas, item]);
+                      });
+                      _guardarEmenta();
+                    }
+                  },
+                  onRemover: (index) {
+                    final novos = List<String>.from(_ementa.bebidas)..removeAt(index);
+                    setState(() => _ementa = _ementa.copiarCom(bebidas: novos));
+                    _guardarEmenta();
+                  },
+                ),
+                _SecaoEmenta(
+                  itens: _ementa.sobremesas,
+                  onAdicionar: (item) {
+                    if (!_ementa.sobremesas.contains(item)) {
+                      setState(() {
+                        _ementa =
+                            _ementa.copiarCom(sobremesas: [..._ementa.sobremesas, item]);
+                      });
+                      _guardarEmenta();
+                    }
+                  },
+                  onRemover: (index) {
+                    final novos = List<String>.from(_ementa.sobremesas)..removeAt(index);
+                    setState(() => _ementa = _ementa.copiarCom(sobremesas: novos));
+                    _guardarEmenta();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -282,7 +412,8 @@ class _HomePageState extends State<HomePage> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pedido removido!'), duration: Duration(seconds: 1)),
+        const SnackBar(
+            content: Text('Pedido removido!'), duration: Duration(seconds: 1)),
       );
     }
   }
@@ -304,15 +435,20 @@ class _HomePageState extends State<HomePage> {
 
   void _salvarPedido() {
     if (_formKey.currentState!.validate()) {
+      final prato = _pratoController.text;
+      final bebida = _bebidaController.text;
+      final sobremesa = _doceController.text;
+
       setState(() {
         _listaDePedidos.add(
           Pedido(
             cliente: _clienteController.text,
-            prato: _pratoController.text,
-            bebida: _bebidaController.text,
-            sobremesa: _doceController.text,
+            prato: prato,
+            bebida: bebida,
+            sobremesa: sobremesa,
           ),
         );
+        _chaveFormulario = UniqueKey();
       });
 
       //armezanar os dados no storage local
@@ -328,7 +464,136 @@ class _HomePageState extends State<HomePage> {
           content: Text('Pedido adicionado! Muda de aba para ver.'),
         ),
       );
+
+      _ofereceAdicionarAEmenta(prato, bebida, sobremesa);
     }
+  }
+
+  Future<void> _ofereceAdicionarAEmenta(
+      String prato, String bebida, String sobremesa) async {
+    final List<String> emFalta = [];
+    if (prato.isNotEmpty && !_ementa.pratos.contains(prato)) {
+      emFalta.add('Prato: $prato');
+    }
+    if (bebida.isNotEmpty && !_ementa.bebidas.contains(bebida)) {
+      emFalta.add('Bebida: $bebida');
+    }
+    if (sobremesa.isNotEmpty && !_ementa.sobremesas.contains(sobremesa)) {
+      emFalta.add('Sobremesa: $sobremesa');
+    }
+
+    if (emFalta.isEmpty) return;
+
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Adicionar à ementa?'),
+        content: Text(
+          'Os seguintes itens não estão na ementa:\n\n${emFalta.map((e) => '• $e').join('\n')}\n\nQueres adicioná-los?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Não'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Adicionar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmado != true) return;
+
+    setState(() {
+      if (prato.isNotEmpty && !_ementa.pratos.contains(prato)) {
+        _ementa = _ementa.copiarCom(pratos: [..._ementa.pratos, prato]);
+      }
+      if (bebida.isNotEmpty && !_ementa.bebidas.contains(bebida)) {
+        _ementa = _ementa.copiarCom(bebidas: [..._ementa.bebidas, bebida]);
+      }
+      if (sobremesa.isNotEmpty && !_ementa.sobremesas.contains(sobremesa)) {
+        _ementa = _ementa.copiarCom(sobremesas: [..._ementa.sobremesas, sobremesa]);
+      }
+    });
+    _guardarEmenta();
+  }
+}
+
+class _SecaoEmenta extends StatefulWidget {
+  final List<String> itens;
+  final void Function(String) onAdicionar;
+  final void Function(int) onRemover;
+
+  const _SecaoEmenta({
+    required this.itens,
+    required this.onAdicionar,
+    required this.onRemover,
+  });
+
+  @override
+  State<_SecaoEmenta> createState() => _SecaoEmentaState();
+}
+
+class _SecaoEmentaState extends State<_SecaoEmenta> {
+  final _controlador = TextEditingController();
+
+  @override
+  void dispose() {
+    _controlador.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controlador,
+                  inputFormatters: [UpperCaseFirstLetterFormatter()],
+                  decoration: const InputDecoration(hintText: 'Novo item...'),
+                  onSubmitted: (val) {
+                    if (val.isNotEmpty) {
+                      widget.onAdicionar(val);
+                      _controlador.clear();
+                    }
+                  },
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add_circle, color: Colors.amber),
+                onPressed: () {
+                  if (_controlador.text.isNotEmpty) {
+                    widget.onAdicionar(_controlador.text);
+                    _controlador.clear();
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: widget.itens.isEmpty
+              ? const Center(child: Text('Sem itens na ementa.'))
+              : ListView.builder(
+                  itemCount: widget.itens.length,
+                  itemBuilder: (context, index) => ListTile(
+                    title: Text(widget.itens[index]),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      onPressed: () => widget.onRemover(index),
+                    ),
+                  ),
+                ),
+        ),
+      ],
+    );
   }
 }
 
