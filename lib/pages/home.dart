@@ -104,9 +104,22 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Casa da Avó"),
-        backgroundColor: Colors.amber,
+        title: const Text(
+          "Casa da Avó",
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
         centerTitle: true,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           if (_indiceAtual == 1 && _listaDePedidos.isNotEmpty)
             IconButton(
@@ -147,9 +160,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         ),
       ),
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _indiceAtual,
-        onTap: (index) {
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _indiceAtual,
+        onDestinationSelected: (index) {
           setState(() => _indiceAtual = index);
           _paginaControlador.animateToPage(
             index,
@@ -157,10 +170,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             curve: Curves.easeInOut,
           );
         },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.edit_note), label: 'Pedir'),
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Pedidos'),
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Ementa'),
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.edit_note), label: 'Pedir'),
+          NavigationDestination(icon: Icon(Icons.list_alt), label: 'Pedidos'),
+          NavigationDestination(icon: Icon(Icons.menu_book), label: 'Ementa'),
         ],
       ),
     );
@@ -195,6 +208,24 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           key: _chaveFormulario,
           child: Column(
             children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(4, 8, 4, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _indicePedidoEmEdicao != null ? 'Editar pedido' : 'Novo pedido',
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Preenche os campos abaixo.',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+              ),
               TextFormField(
                 controller: _clienteController,
                 inputFormatters: [UpperCaseFirstLetterFormatter()],
@@ -301,7 +332,28 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   // Widget da Lista
   Widget _buildLista() {
     if (_listaDePedidos.isEmpty) {
-      return const Center(child: Text("Ainda não há pedidos."));
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.receipt_long, size: 90, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text(
+              'Sem pedidos ainda',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[500],
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Vai ao separador Pedir para começar.',
+              style: TextStyle(fontSize: 13, color: Colors.grey[400]),
+            ),
+          ],
+        ),
+      );
     }
 
     return Column(
@@ -371,42 +423,80 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 ),
                 child: Card(
                   margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+                  clipBehavior: Clip.antiAlias,
+                  child: IntrinsicHeight(
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        Container(width: 5, color: Colors.amber),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                pedido.cliente,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(
+                                  radius: 22,
+                                  backgroundColor: Colors.amber[100],
+                                  child: Text(
+                                    pedido.cliente.isNotEmpty
+                                        ? pedido.cliente[0].toUpperCase()
+                                        : '?',
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.bold,
+                                      color: Color(0xFFD97706),
+                                      fontSize: 18,
                                     ),
-                              ),
-                              const SizedBox(height: 6),
-                              _campoIcone(Icons.restaurant, pedido.prato),
-                              const SizedBox(height: 2),
-                              _campoIcone(Icons.local_bar, pedido.bebida),
-                              const SizedBox(height: 2),
-                              _campoIcone(Icons.cake, pedido.sobremesa),
-                              const SizedBox(height: 6),
-                              Text(
-                                _tempoRelativo(pedido.dataCriacao),
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        pedido.cliente,
+                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 4,
+                                        children: [
+                                          if (pedido.prato.isNotEmpty)
+                                            _chip(Icons.restaurant, pedido.prato),
+                                          if (pedido.bebida.isNotEmpty)
+                                            _chip(Icons.local_bar, pedido.bebida),
+                                          if (pedido.sobremesa.isNotEmpty)
+                                            _chip(Icons.cake, pedido.sobremesa),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        _tempoRelativo(pedido.dataCriacao),
+                                        style: Theme.of(context).textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit_outlined, color: Colors.blueGrey),
+                                      onPressed: () => _editarPedido(index),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                      onPressed: () => _confirmarApagar(index),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, color: Colors.blueGrey),
-                          onPressed: () => _editarPedido(index),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                          onPressed: () => _confirmarApagar(index),
                         ),
                       ],
                     ),
@@ -702,13 +792,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _campoIcone(IconData icone, String valor) {
-    return Row(
-      children: [
-        Icon(icone, size: 14, color: Colors.grey[600]),
-        const SizedBox(width: 4),
-        Expanded(child: Text(valor, style: const TextStyle(fontSize: 13))),
-      ],
+  Widget _chip(IconData icone, String texto) {
+    return Chip(
+      avatar: Icon(icone, size: 14, color: const Color(0xFFD97706)),
+      label: Text(texto, style: const TextStyle(fontSize: 12)),
+      padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
+      side: const BorderSide(color: Color(0xFFFDE68A)),
+      backgroundColor: const Color(0xFFFFFBEB),
     );
   }
 
