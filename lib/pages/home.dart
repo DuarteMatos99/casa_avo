@@ -154,9 +154,8 @@ class _HomePageState extends State<HomePage> {
 
         return ListTile(
           title: Text(pedido.cliente),
-
           subtitle: Text(
-            "Prato: ${pedido.prato}\nBebida: ${pedido.bebida}\nSobremesa: ${pedido.sobremesa}",
+            "Prato: ${pedido.prato}\nBebida: ${pedido.bebida}\nSobremesa: ${pedido.sobremesa}\n${_tempoRelativo(pedido.dataCriacao)}",
           ),
           // O botão de apagar entra aqui:
           trailing: IconButton(
@@ -182,6 +181,21 @@ class _HomePageState extends State<HomePage> {
         );
       },
     );
+  }
+
+  String _tempoRelativo(DateTime data) {
+    final diferenca = DateTime.now().difference(data);
+    if (diferenca.inSeconds < 60) return 'há menos de um minuto';
+    if (diferenca.inMinutes < 60) {
+      final m = diferenca.inMinutes;
+      return 'há $m ${m == 1 ? 'minuto' : 'minutos'}';
+    }
+    if (diferenca.inHours < 24) {
+      final h = diferenca.inHours;
+      return 'há $h ${h == 1 ? 'hora' : 'horas'}';
+    }
+    final d = diferenca.inDays;
+    return 'há $d ${d == 1 ? 'dia' : 'dias'}';
   }
 
   void _salvarPedido() {
