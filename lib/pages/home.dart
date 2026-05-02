@@ -41,6 +41,7 @@ class _HomePageState extends State<HomePage> {
   Ementa _ementa = Ementa();
 
   Key _chaveFormulario = UniqueKey();
+  int? _indicePedidoEmEdicao;
 
   // Vai buscar os dados guardados no local storage - INICIO +
   Future<void> _guardarDados() async {
@@ -125,6 +126,24 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Widget do Formulário
+  InputDecoration _decoracaoCampo(String rotulo, IconData icone) {
+    return InputDecoration(
+      labelText: rotulo,
+      prefixIcon: Icon(icone),
+      filled: true,
+      fillColor: Colors.grey[100],
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.amber, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+    );
+  }
+
   Widget _buildFormulario() {
     return SingleChildScrollView(
       // Para não dar erro com o teclado
@@ -138,28 +157,53 @@ class _HomePageState extends State<HomePage> {
               TextFormField(
                 controller: _clienteController,
                 inputFormatters: [UpperCaseFirstLetterFormatter()],
-                decoration: const InputDecoration(labelText: 'Para quem é?'),
+                decoration: _decoracaoCampo('Para quem é?', Icons.person_outline),
               ),
+              const SizedBox(height: 12),
               _campoAutoComplete(
                 opcoes: _ementa.pratos,
                 controlador: _pratoController,
                 rotulo: 'Prato',
+                icone: Icons.restaurant,
               ),
+              const SizedBox(height: 12),
               _campoAutoComplete(
                 opcoes: _ementa.bebidas,
                 controlador: _bebidaController,
                 rotulo: 'Bebida',
+                icone: Icons.local_bar,
               ),
+              const SizedBox(height: 12),
               _campoAutoComplete(
                 opcoes: _ementa.sobremesas,
                 controlador: _doceController,
                 rotulo: 'Sobremesa',
+                icone: Icons.cake,
               ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _salvarPedido,
-                child: const Text("Enviar Pedido"),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber,
+                    foregroundColor: Colors.black87,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _salvarPedido,
+                  child: Text(
+                    _indicePedidoEmEdicao != null ? "Guardar Pedido" : "Enviar Pedido",
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
               ),
+              if (_indicePedidoEmEdicao != null)
+                TextButton(
+                  onPressed: _cancelarEdicao,
+                  child: const Text("Cancelar edição"),
+                ),
             ],
           ),
         ),
@@ -171,8 +215,12 @@ class _HomePageState extends State<HomePage> {
     required List<String> opcoes,
     required TextEditingController controlador,
     required String rotulo,
+    required IconData icone,
   }) {
     return Autocomplete<String>(
+      initialValue: controlador.text.isNotEmpty
+          ? TextEditingValue(text: controlador.text)
+          : null,
       optionsBuilder: (TextEditingValue value) {
         if (value.text.isEmpty) return const Iterable<String>.empty();
         return opcoes.where(
@@ -187,7 +235,7 @@ class _HomePageState extends State<HomePage> {
           controller: campoControlador,
           focusNode: focoNo,
           inputFormatters: [UpperCaseFirstLetterFormatter()],
-          decoration: InputDecoration(labelText: rotulo),
+          decoration: _decoracaoCampo(rotulo, icone),
           onChanged: (val) => controlador.text = val,
         );
       },
@@ -236,6 +284,10 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, color: Colors.blueGrey),
+                  onPressed: () => _editarPedido(index),
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
@@ -380,6 +432,30 @@ class _HomePageState extends State<HomePage> {
     return 'há $d ${d == 1 ? 'dia' : 'dias'}';
   }
 
+  void _editarPedido(int index) {
+    final pedido = _listaDePedidos[index];
+    setState(() {
+      _indicePedidoEmEdicao = index;
+      _clienteController.text = pedido.cliente;
+      _pratoController.text = pedido.prato;
+      _bebidaController.text = pedido.bebida;
+      _doceController.text = pedido.sobremesa;
+      _chaveFormulario = UniqueKey();
+      _indiceAtual = 0;
+    });
+  }
+
+  void _cancelarEdicao() {
+    setState(() {
+      _indicePedidoEmEdicao = null;
+      _clienteController.clear();
+      _pratoController.clear();
+      _bebidaController.clear();
+      _doceController.clear();
+      _chaveFormulario = UniqueKey();
+    });
+  }
+
   void _salvarPedido() {
     if (_formKey.currentState!.validate()) {
       final prato = _pratoController.text;
@@ -387,14 +463,26 @@ class _HomePageState extends State<HomePage> {
       final sobremesa = _doceController.text;
 
       setState(() {
-        _listaDePedidos.add(
-          Pedido(
+        if (_indicePedidoEmEdicao != null) {
+          final dataOriginal = _listaDePedidos[_indicePedidoEmEdicao!].dataCriacao;
+          _listaDePedidos[_indicePedidoEmEdicao!] = Pedido(
             cliente: _clienteController.text,
             prato: prato,
             bebida: bebida,
             sobremesa: sobremesa,
-          ),
-        );
+            dataCriacao: dataOriginal,
+          );
+          _indicePedidoEmEdicao = null;
+        } else {
+          _listaDePedidos.add(
+            Pedido(
+              cliente: _clienteController.text,
+              prato: prato,
+              bebida: bebida,
+              sobremesa: sobremesa,
+            ),
+          );
+        }
         _chaveFormulario = UniqueKey();
         _indiceAtual = 1;
       });
