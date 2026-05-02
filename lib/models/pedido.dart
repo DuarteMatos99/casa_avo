@@ -4,6 +4,7 @@ class Pedido {
   final String bebida;
   final String sobremesa;
   final DateTime dataCriacao;
+  final bool entregue;
 
   Pedido({
     required this.cliente,
@@ -11,12 +12,17 @@ class Pedido {
     required this.bebida,
     required this.sobremesa,
     DateTime? dataCriacao,
+    this.entregue = false,
   }) : dataCriacao = dataCriacao ?? DateTime.now();
 
-  @override
-  String toString() {
-    return 'Pedido(cliente: $cliente, prato: $prato, bebida: $bebida, sobremesa: $sobremesa)';
-  }
+  Pedido copiarCom({bool? entregue}) => Pedido(
+    cliente: cliente,
+    prato: prato,
+    bebida: bebida,
+    sobremesa: sobremesa,
+    dataCriacao: dataCriacao,
+    entregue: entregue ?? this.entregue,
+  );
 
   Map<String, dynamic> toJson() => {
     'cliente': cliente,
@@ -24,6 +30,7 @@ class Pedido {
     'bebida': bebida,
     'sobremesa': sobremesa,
     'dataCriacao': dataCriacao.toIso8601String(),
+    'entregue': entregue,
   };
 
   factory Pedido.fromJson(Map<String, dynamic> json) => Pedido(
@@ -34,5 +41,6 @@ class Pedido {
     dataCriacao: json['dataCriacao'] != null
         ? DateTime.parse(json['dataCriacao'])
         : DateTime.now(),
+    entregue: json['entregue'] ?? false,
   );
 }

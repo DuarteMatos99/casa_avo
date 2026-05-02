@@ -152,19 +152,73 @@ class _HomePageState extends State<HomePage> {
       itemBuilder: (context, index) {
         final pedido = _listaDePedidos[index];
 
-        return ListTile(
-          title: Text(pedido.cliente),
-          subtitle: Text(
-            "Prato: ${pedido.prato}\nBebida: ${pedido.bebida}\nSobremesa: ${pedido.sobremesa}\n${_tempoRelativo(pedido.dataCriacao)}",
-          ),
-          // O botão de apagar entra aqui:
-          trailing: IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-            onPressed: () => _confirmarApagar(index),
+        return Opacity(
+          opacity: pedido.entregue ? 0.45 : 1.0,
+          child: ListTile(
+            title: Text(
+              pedido.cliente,
+              style: TextStyle(
+                decoration: pedido.entregue ? TextDecoration.lineThrough : null,
+              ),
+            ),
+            subtitle: Text(
+              "Prato: ${pedido.prato}\nBebida: ${pedido.bebida}\nSobremesa: ${pedido.sobremesa}\n${_tempoRelativo(pedido.dataCriacao)}",
+            ),
+            // O botão de apagar entra aqui:
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    pedido.entregue ? Icons.check_circle : Icons.check_circle_outline,
+                    color: pedido.entregue ? Colors.green : Colors.grey,
+                  ),
+                  onPressed: () => _confirmarEntregue(index),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                  onPressed: () => _confirmarApagar(index),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
+  }
+
+  Future<void> _confirmarEntregue(int index) async {
+    final pedido = _listaDePedidos[index];
+    final novoEstado = !pedido.entregue;
+
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(novoEstado ? 'Marcar como entregue' : 'Marcar como não entregue'),
+        content: Text(
+          novoEstado
+              ? 'Tens a certeza que queres marcar este pedido como entregue?'
+              : 'Tens a certeza que queres marcar este pedido como não entregue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmado != true) return;
+
+    setState(() {
+      _listaDePedidos[index] = pedido.copiarCom(entregue: novoEstado);
+    });
+    _guardarDados();
   }
 
   Future<void> _confirmarApagar(int index) async {
