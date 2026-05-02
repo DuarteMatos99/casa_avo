@@ -102,6 +102,14 @@ class _HomePageState extends State<HomePage> {
         title: const Text("Casa da Avó"),
         backgroundColor: Colors.amber,
         centerTitle: true,
+        actions: [
+          if (_indiceAtual == 1 && _listaDePedidos.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep),
+              tooltip: 'Apagar todos',
+              onPressed: _confirmarApagarTodos,
+            ),
+        ],
       ),
 
       // O corpo agora muda conforme o índice
@@ -160,6 +168,7 @@ class _HomePageState extends State<HomePage> {
                 controller: _clienteController,
                 inputFormatters: [UpperCaseFirstLetterFormatter()],
                 decoration: _decoracaoCampo('Para quem é?', Icons.person_outline),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Nome obrigatório' : null,
               ),
               const SizedBox(height: 12),
               _campoAutoComplete(
@@ -277,46 +286,99 @@ class _HomePageState extends State<HomePage> {
             itemBuilder: (context, index) {
               final pedido = _listaDePedidos[index];
 
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              pedido.cliente,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                            const SizedBox(height: 6),
-                            _campoIcone(Icons.restaurant, pedido.prato),
-                            const SizedBox(height: 2),
-                            _campoIcone(Icons.local_bar, pedido.bebida),
-                            const SizedBox(height: 2),
-                            _campoIcone(Icons.cake, pedido.sobremesa),
-                            const SizedBox(height: 6),
-                            Text(
-                              _tempoRelativo(pedido.dataCriacao),
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
+              return Dismissible(
+                key: ValueKey(pedido.dataCriacao.millisecondsSinceEpoch),
+                confirmDismiss: (direction) async {
+                  if (direction == DismissDirection.endToStart) {
+                    _editarPedido(index);
+                    return false;
+                  }
+                  return showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Apagar pedido'),
+                      content: const Text('Tens a certeza que queres apagar este pedido?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('Cancelar'),
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined, color: Colors.blueGrey),
-                        onPressed: () => _editarPedido(index),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                        onPressed: () => _confirmarApagar(index),
-                      ),
-                    ],
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          child: const Text('Apagar', style: TextStyle(color: Colors.redAccent)),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                onDismissed: (_) {
+                  setState(() => _listaDePedidos.removeAt(index));
+                  _guardarDados();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Pedido removido!'), duration: Duration(seconds: 1)),
+                  );
+                },
+                background: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.only(left: 20),
+                  child: const Icon(Icons.delete, color: Colors.white),
+                ),
+                secondaryBackground: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blueGrey,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  child: const Icon(Icons.edit, color: Colors.white),
+                ),
+                child: Card(
+                  margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                pedido.cliente,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                              const SizedBox(height: 6),
+                              _campoIcone(Icons.restaurant, pedido.prato),
+                              const SizedBox(height: 2),
+                              _campoIcone(Icons.local_bar, pedido.bebida),
+                              const SizedBox(height: 2),
+                              _campoIcone(Icons.cake, pedido.sobremesa),
+                              const SizedBox(height: 6),
+                              Text(
+                                _tempoRelativo(pedido.dataCriacao),
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, color: Colors.blueGrey),
+                          onPressed: () => _editarPedido(index),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                          onPressed: () => _confirmarApagar(index),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -544,6 +606,10 @@ class _HomePageState extends State<HomePage> {
                     setState(() => _ementa = _ementa.copiarCom(pratos: novos));
                     _guardarEmenta();
                   },
+                  onApagarTodos: () {
+                    setState(() => _ementa = _ementa.copiarCom(pratos: []));
+                    _guardarEmenta();
+                  },
                 ),
                 _SecaoEmenta(
                   itens: _ementa.bebidas,
@@ -558,6 +624,10 @@ class _HomePageState extends State<HomePage> {
                   onRemover: (index) {
                     final novos = List<String>.from(_ementa.bebidas)..removeAt(index);
                     setState(() => _ementa = _ementa.copiarCom(bebidas: novos));
+                    _guardarEmenta();
+                  },
+                  onApagarTodos: () {
+                    setState(() => _ementa = _ementa.copiarCom(bebidas: []));
                     _guardarEmenta();
                   },
                 ),
@@ -577,6 +647,10 @@ class _HomePageState extends State<HomePage> {
                     setState(() => _ementa = _ementa.copiarCom(sobremesas: novos));
                     _guardarEmenta();
                   },
+                  onApagarTodos: () {
+                    setState(() => _ementa = _ementa.copiarCom(sobremesas: []));
+                    _guardarEmenta();
+                  },
                 ),
               ],
             ),
@@ -594,6 +668,29 @@ class _HomePageState extends State<HomePage> {
         Expanded(child: Text(valor, style: const TextStyle(fontSize: 13))),
       ],
     );
+  }
+
+  Future<void> _confirmarApagarTodos() async {
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Apagar todos os pedidos'),
+        content: const Text('Tens a certeza? Esta ação não pode ser desfeita.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Apagar todos', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+    if (confirmado != true) return;
+    setState(() => _listaDePedidos.clear());
+    _guardarDados();
   }
 
   Future<void> _confirmarApagar(int index) async {
@@ -766,11 +863,13 @@ class _SecaoEmenta extends StatefulWidget {
   final List<String> itens;
   final void Function(String) onAdicionar;
   final void Function(int) onRemover;
+  final VoidCallback onApagarTodos;
 
   const _SecaoEmenta({
     required this.itens,
     required this.onAdicionar,
     required this.onRemover,
+    required this.onApagarTodos,
   });
 
   @override
@@ -1054,7 +1153,21 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                 child: TextField(
                   controller: _controlador,
                   inputFormatters: [UpperCaseFirstLetterFormatter()],
-                  decoration: const InputDecoration(hintText: 'Novo item...'),
+                  decoration: InputDecoration(
+                    hintText: 'Novo item...',
+                    prefixIcon: const Icon(Icons.edit_note, color: Colors.grey),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.amber, width: 2),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  ),
                   onSubmitted: (val) {
                     if (val.isNotEmpty) {
                       widget.onAdicionar(val);
@@ -1083,6 +1196,31 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                 onPressed: _carregando ? null : _importarDaImagem,
                 tooltip: 'Importar da imagem',
               ),
+              if (widget.itens.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
+                  tooltip: 'Apagar todos',
+                  onPressed: () async {
+                    final confirmado = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Apagar todos'),
+                        content: const Text('Tens a certeza? Esta ação não pode ser desfeita.'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(false),
+                            child: const Text('Cancelar'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(true),
+                            child: const Text('Apagar todos', style: TextStyle(color: Colors.redAccent)),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmado == true) widget.onApagarTodos();
+                  },
+                ),
             ],
           ),
         ),
