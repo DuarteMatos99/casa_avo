@@ -774,6 +774,25 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
   }
 
   Future<void> _importarDaImagem() async {
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Importar da ementa'),
+        content: const Text('Queres fazer upload de uma foto da ementa para extrair os itens automaticamente?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Continuar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmado != true) return;
+
     setState(() => _carregando = true);
     try {
       final picker = ImagePicker();
