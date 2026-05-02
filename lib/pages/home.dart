@@ -4,6 +4,8 @@ import 'package:casa_avo/models/ementa.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert'; // Necessário para o jsonEncode
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -763,11 +765,248 @@ class _SecaoEmenta extends StatefulWidget {
 
 class _SecaoEmentaState extends State<_SecaoEmenta> {
   final _controlador = TextEditingController();
+  bool _carregando = false;
 
   @override
   void dispose() {
     _controlador.dispose();
     super.dispose();
+  }
+
+  Future<void> _importarDaImagem() async {
+    setState(() => _carregando = true);
+    try {
+      final picker = ImagePicker();
+      final imagem = await picker.pickImage(source: ImageSource.gallery);
+      if (imagem == null) return;
+
+      final reconhecedor = TextRecognizer(script: TextRecognitionScript.latin);
+      try {
+        final inputImage = InputImage.fromFilePath(imagem.path);
+        final resultado = await reconhecedor.processImage(inputImage);
+        final candidatos = resultado.blocks
+            .expand((b) => b.lines)
+            .map((l) => l.text.trim())
+            .where(_linhaValida)
+            .map(_normalizarCapitalizacao)
+            .toSet()
+            .toList();
+
+        if (!mounted) return;
+
+        if (candidatos.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Nenhum texto reconhecido na imagem.')),
+          );
+          return;
+        }
+
+        await _mostrarCandidatos(candidatos);
+      } finally {
+        await reconhecedor.close();
+      }
+    } finally {
+      if (mounted) setState(() => _carregando = false);
+    }
+  }
+
+  static const _termosIgnorados = [
+    'segunda-feira', 'segunda', 'terça-feira', 'terca-feira', 'terça', 'terca',
+    'quarta-feira', 'quarta', 'quinta-feira', 'quinta', 'sexta-feira', 'sexta',
+    'sábado', 'sabado', 'domingo', 'reservas', 'pronto a comer',
+    'casa da avó', 'casa da avo', 'comida caseira',
+    'all images', 'all photos', 'reels', 'mentions',
+    'feita com', 'de sempre', 'e sabor', 'menu de',
+  ];
+
+  static const _palavrasMinusculas = {
+    'de', 'da', 'do', 'das', 'dos', 'e', 'ou', 'a', 'o', 'as', 'os',
+    'em', 'com', 'para', 'por', 'que', 'ao', 'à', 'aos', 'às',
+  };
+
+  bool _linhaValida(String linha) {
+    if (linha.length < 3) return false;
+    if (RegExp(r'\d').hasMatch(linha)) return false;
+    final semEspeciais = linha
+        .replaceAll(RegExp(r'[.,€$%+\-*/\\()\[\]{}|<>@#!?;:_=]'), '')
+        .trim();
+    if (semEspeciais.length < 3) return false;
+    final linhaLower = linha.toLowerCase().trim();
+    for (final termo in _termosIgnorados) {
+      if (linhaLower == termo || linhaLower.contains(termo)) return false;
+    }
+    return true;
+  }
+
+  String _normalizarCapitalizacao(String texto) {
+    if (texto.isEmpty) return texto;
+    final apenasLetras = texto.replaceAll(RegExp(r'[^a-zA-ZÀ-ÿ]'), '');
+    if (apenasLetras.isNotEmpty && apenasLetras == apenasLetras.toUpperCase()) {
+      final palavras = texto.split(' ');
+      return palavras.asMap().entries.map((e) {
+        final p = e.value;
+        if (p.isEmpty) return p;
+        final pLower = p.toLowerCase();
+        if (e.key > 0 && _palavrasMinusculas.contains(pLower)) return pLower;
+        return p[0].toUpperCase() + p.substring(1).toLowerCase();
+      }).join(' ');
+    }
+    return texto[0].toUpperCase() + texto.substring(1);
+  }
+
+  Future<void> _mostrarCandidatos(List<String> candidatos) async {
+    final selecionados = List<bool>.filled(candidatos.length, true);
+    int? indiceEmEdicao;
+    final ctrlEdicao = TextEditingController();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setEstado) {
+          void confirmarEdicao() {
+            final texto = ctrlEdicao.text.trim();
+            if (texto.isNotEmpty && indiceEmEdicao != null) {
+              setEstado(() {
+                candidatos[indiceEmEdicao!] = texto;
+                indiceEmEdicao = null;
+                ctrlEdicao.clear();
+              });
+            }
+          }
+
+          return SafeArea(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * 0.75,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 4, 0),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Seleciona os itens a adicionar',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.of(ctx).pop(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 16),
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: candidatos.length,
+                      itemBuilder: (ctx, i) => ListTile(
+                        onTap: () => setEstado(() => selecionados[i] = !selecionados[i]),
+                        leading: Checkbox(
+                          value: selecionados[i],
+                          activeColor: Colors.amber,
+                          onChanged: (val) =>
+                              setEstado(() => selecionados[i] = val ?? false),
+                        ),
+                        title: Text(
+                          candidatos[i],
+                          style: TextStyle(
+                            color: selecionados[i] ? Colors.black87 : Colors.grey,
+                          ),
+                        ),
+                        trailing: IconButton(
+                          icon: Icon(
+                            Icons.edit_outlined,
+                            size: 18,
+                            color: indiceEmEdicao == i ? Colors.amber : Colors.blueGrey,
+                          ),
+                          onPressed: () => setEstado(() {
+                            indiceEmEdicao = i;
+                            ctrlEdicao.text = candidatos[i];
+                          }),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (indiceEmEdicao != null) ...[
+                    const Divider(height: 1),
+                    Padding(
+                      padding: EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        top: 12,
+                        bottom: MediaQuery.of(ctx).viewInsets.bottom + 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: ctrlEdicao,
+                              autofocus: true,
+                              inputFormatters: [UpperCaseFirstLetterFormatter()],
+                              decoration: const InputDecoration(
+                                labelText: 'Editar item',
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                              ),
+                              onSubmitted: (_) => confirmarEdicao(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber,
+                              foregroundColor: Colors.black87,
+                            ),
+                            onPressed: confirmarEdicao,
+                            child: const Text('OK'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber,
+                            foregroundColor: Colors.black87,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            for (int i = 0; i < candidatos.length; i++) {
+                              if (selecionados[i]) widget.onAdicionar(candidatos[i]);
+                            }
+                            Navigator.of(ctx).pop();
+                          },
+                          child: const Text(
+                            'Adicionar selecionados',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    ctrlEdicao.dispose();
   }
 
   @override
@@ -799,6 +1038,17 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                     _controlador.clear();
                   }
                 },
+              ),
+              IconButton(
+                icon: _carregando
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.document_scanner, color: Colors.amber),
+                onPressed: _carregando ? null : _importarDaImagem,
+                tooltip: 'Importar da imagem',
               ),
             ],
           ),
