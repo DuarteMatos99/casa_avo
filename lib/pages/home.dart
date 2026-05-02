@@ -206,61 +206,42 @@ class _HomePageState extends State<HomePage> {
       itemBuilder: (context, index) {
         final pedido = _listaDePedidos[index];
 
-        return Opacity(
-          opacity: pedido.entregue ? 0.45 : 1.0,
-          child: Card(
-            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          pedido.cliente,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                decoration:
-                                    pedido.entregue ? TextDecoration.lineThrough : null,
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        const SizedBox(height: 6),
-                        _campoIcone(Icons.restaurant, pedido.prato),
-                        const SizedBox(height: 2),
-                        _campoIcone(Icons.local_bar, pedido.bebida),
-                        const SizedBox(height: 2),
-                        _campoIcone(Icons.cake, pedido.sobremesa),
-                        const SizedBox(height: 6),
-                        Text(
-                          _tempoRelativo(pedido.dataCriacao),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      IconButton(
-                        icon: Icon(
-                          pedido.entregue
-                              ? Icons.check_circle
-                              : Icons.check_circle_outline,
-                          color: pedido.entregue ? Colors.green : Colors.grey,
-                        ),
-                        onPressed: () => _confirmarEntregue(index),
+                      Text(
+                        pedido.cliente,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                        onPressed: () => _confirmarApagar(index),
+                      const SizedBox(height: 6),
+                      _campoIcone(Icons.restaurant, pedido.prato),
+                      const SizedBox(height: 2),
+                      _campoIcone(Icons.local_bar, pedido.bebida),
+                      const SizedBox(height: 2),
+                      _campoIcone(Icons.cake, pedido.sobremesa),
+                      const SizedBox(height: 6),
+                      Text(
+                        _tempoRelativo(pedido.dataCriacao),
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                  onPressed: () => _confirmarApagar(index),
+                ),
+              ],
             ),
           ),
         );
@@ -350,40 +331,6 @@ class _HomePageState extends State<HomePage> {
         Expanded(child: Text(valor, style: const TextStyle(fontSize: 13))),
       ],
     );
-  }
-
-  Future<void> _confirmarEntregue(int index) async {
-    final pedido = _listaDePedidos[index];
-    final novoEstado = !pedido.entregue;
-
-    final confirmado = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(novoEstado ? 'Marcar como entregue' : 'Marcar como não entregue'),
-        content: Text(
-          novoEstado
-              ? 'Tens a certeza que queres marcar este pedido como entregue?'
-              : 'Tens a certeza que queres marcar este pedido como não entregue?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Confirmar'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmado != true) return;
-
-    setState(() {
-      _listaDePedidos[index] = pedido.copiarCom(entregue: novoEstado);
-    });
-    _guardarDados();
   }
 
   Future<void> _confirmarApagar(int index) async {
