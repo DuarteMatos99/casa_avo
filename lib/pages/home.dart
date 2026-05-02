@@ -248,56 +248,146 @@ class _HomePageState extends State<HomePage> {
       return const Center(child: Text("Ainda não há pedidos."));
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(8),
-      itemCount: _listaDePedidos.length,
-      itemBuilder: (context, index) {
-        final pedido = _listaDePedidos[index];
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+          child: _buildCartaoResumo(),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(8),
+            itemCount: _listaDePedidos.length,
+            itemBuilder: (context, index) {
+              final pedido = _listaDePedidos[index];
 
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        pedido.cliente,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              pedido.cliente,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
+                            const SizedBox(height: 6),
+                            _campoIcone(Icons.restaurant, pedido.prato),
+                            const SizedBox(height: 2),
+                            _campoIcone(Icons.local_bar, pedido.bebida),
+                            const SizedBox(height: 2),
+                            _campoIcone(Icons.cake, pedido.sobremesa),
+                            const SizedBox(height: 6),
+                            Text(
+                              _tempoRelativo(pedido.dataCriacao),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 6),
-                      _campoIcone(Icons.restaurant, pedido.prato),
-                      const SizedBox(height: 2),
-                      _campoIcone(Icons.local_bar, pedido.bebida),
-                      const SizedBox(height: 2),
-                      _campoIcone(Icons.cake, pedido.sobremesa),
-                      const SizedBox(height: 6),
-                      Text(
-                        _tempoRelativo(pedido.dataCriacao),
-                        style: Theme.of(context).textTheme.bodySmall,
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, color: Colors.blueGrey),
+                        onPressed: () => _editarPedido(index),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                        onPressed: () => _confirmarApagar(index),
                       ),
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, color: Colors.blueGrey),
-                  onPressed: () => _editarPedido(index),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCartaoResumo() {
+    Map<String, int> contarItens(List<String> itens) {
+      final contagem = <String, int>{};
+      for (final item in itens) {
+        if (item.isNotEmpty) contagem[item] = (contagem[item] ?? 0) + 1;
+      }
+      final ordenado = contagem.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+      return Map.fromEntries(ordenado);
+    }
+
+    String formatarLinha(Map<String, int> contagem) =>
+        contagem.entries.map((e) => '(${e.value}×) ${e.key}').join('  ·  ');
+
+    final pratos = contarItens(_listaDePedidos.map((p) => p.prato).toList());
+    final bebidas = contarItens(_listaDePedidos.map((p) => p.bebida).toList());
+    final sobremesas = contarItens(_listaDePedidos.map((p) => p.sobremesa).toList());
+    final total = _listaDePedidos.length;
+
+    void copiarResumo() {
+      final linhas = <String>[
+        'Resumo · $total ${total == 1 ? 'pedido' : 'pedidos'}',
+        if (pratos.isNotEmpty) 'Pratos: ${formatarLinha(pratos)}',
+        if (bebidas.isNotEmpty) 'Bebidas: ${formatarLinha(bebidas)}',
+        if (sobremesas.isNotEmpty) 'Sobremesas: ${formatarLinha(sobremesas)}',
+      ];
+      Clipboard.setData(ClipboardData(text: linhas.join('\n')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Resumo copiado!'), duration: Duration(seconds: 1)),
+      );
+    }
+
+    return Card(
+      margin: EdgeInsets.zero,
+      color: Colors.amber[50],
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 4, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Resumo · $total ${total == 1 ? 'pedido' : 'pedidos'}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                  onPressed: () => _confirmarApagar(index),
+                  icon: const Icon(Icons.copy, size: 18, color: Colors.black54),
+                  onPressed: copiarResumo,
+                  tooltip: 'Copiar resumo',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
               ],
             ),
-          ),
-        );
-      },
+            if (pratos.isNotEmpty) _linhaResumo(Icons.restaurant, pratos),
+            if (bebidas.isNotEmpty) _linhaResumo(Icons.local_bar, bebidas),
+            if (sobremesas.isNotEmpty) _linhaResumo(Icons.cake, sobremesas),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _linhaResumo(IconData icone, Map<String, int> contagem) {
+    final texto = contagem.entries.map((e) => '(${e.value}×) ${e.key}').join('  ·  ');
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icone, size: 14, color: Colors.grey[600]),
+          const SizedBox(width: 4),
+          Expanded(child: Text(texto, style: const TextStyle(fontSize: 13))),
+        ],
+      ),
     );
   }
 
