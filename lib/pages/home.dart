@@ -202,9 +202,23 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               if (_indicePedidoEmEdicao != null)
-                TextButton(
-                  onPressed: _cancelarEdicao,
-                  child: const Text("Cancelar edição"),
+                const SizedBox(height: 12),
+              if (_indicePedidoEmEdicao != null)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _cancelarEdicao,
+                    icon: const Icon(Icons.close, size: 18),
+                    label: const Text("Cancelar edição"),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.redAccent,
+                      side: const BorderSide(color: Colors.redAccent),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
                 ),
             ],
           ),
