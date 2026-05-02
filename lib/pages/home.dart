@@ -449,6 +449,7 @@ class _HomePageState extends State<HomePage> {
           ),
         );
         _chaveFormulario = UniqueKey();
+        _indiceAtual = 1;
       });
 
       //armezanar os dados no storage local
@@ -458,12 +459,6 @@ class _HomePageState extends State<HomePage> {
       _pratoController.clear();
       _bebidaController.clear();
       _doceController.clear();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pedido adicionado! Muda de aba para ver.'),
-        ),
-      );
 
       _ofereceAdicionarAEmenta(prato, bebida, sobremesa);
     }

@@ -35,9 +35,9 @@ class Pedido {
 
   factory Pedido.fromJson(Map<String, dynamic> json) => Pedido(
     cliente: json['cliente'],
-    prato: json['prato'],
-    bebida: json['bebida'],
-    sobremesa: json['sobremesa'],
+    prato: json['prato'] ?? '',
+    bebida: json['bebida'] ?? '',
+    sobremesa: json['sobremesa'] ?? '',
     dataCriacao: json['dataCriacao'] != null
         ? DateTime.parse(json['dataCriacao'])
         : DateTime.now(),
