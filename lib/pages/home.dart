@@ -148,42 +148,77 @@ class _HomePageState extends State<HomePage> {
     }
 
     return ListView.builder(
+      padding: const EdgeInsets.all(8),
       itemCount: _listaDePedidos.length,
       itemBuilder: (context, index) {
         final pedido = _listaDePedidos[index];
 
         return Opacity(
           opacity: pedido.entregue ? 0.45 : 1.0,
-          child: ListTile(
-            title: Text(
-              pedido.cliente,
-              style: TextStyle(
-                decoration: pedido.entregue ? TextDecoration.lineThrough : null,
-              ),
-            ),
-            subtitle: Text(
-              "Prato: ${pedido.prato}\nBebida: ${pedido.bebida}\nSobremesa: ${pedido.sobremesa}\n${_tempoRelativo(pedido.dataCriacao)}",
-            ),
-            // O botão de apagar entra aqui:
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(
-                    pedido.entregue ? Icons.check_circle : Icons.check_circle_outline,
-                    color: pedido.entregue ? Colors.green : Colors.grey,
+          child: Card(
+            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          pedido.cliente,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            decoration: pedido.entregue ? TextDecoration.lineThrough : null,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        _campoIcone(Icons.restaurant, pedido.prato),
+                        const SizedBox(height: 2),
+                        _campoIcone(Icons.local_bar, pedido.bebida),
+                        const SizedBox(height: 2),
+                        _campoIcone(Icons.cake, pedido.sobremesa),
+                        const SizedBox(height: 6),
+                        Text(
+                          _tempoRelativo(pedido.dataCriacao),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
                   ),
-                  onPressed: () => _confirmarEntregue(index),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                  onPressed: () => _confirmarApagar(index),
-                ),
-              ],
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          pedido.entregue ? Icons.check_circle : Icons.check_circle_outline,
+                          color: pedido.entregue ? Colors.green : Colors.grey,
+                        ),
+                        onPressed: () => _confirmarEntregue(index),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                        onPressed: () => _confirmarApagar(index),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _campoIcone(IconData icone, String valor) {
+    return Row(
+      children: [
+        Icon(icone, size: 14, color: Colors.grey[600]),
+        const SizedBox(width: 4),
+        Expanded(child: Text(valor, style: const TextStyle(fontSize: 13))),
+      ],
     );
   }
 
