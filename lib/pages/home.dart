@@ -14,7 +14,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   // formularios no flutter precisam de uma key global
   final _formKey = GlobalKey<FormState>();
 
@@ -23,6 +23,8 @@ class _HomePageState extends State<HomePage> {
   final _pratoController = TextEditingController();
   final _bebidaController = TextEditingController();
   final _doceController = TextEditingController();
+  final _paginaControlador = PageController();
+  late final TabController _ementaTabControlador;
 
   // limpar os controladores quando o widget é destruído
   @override
@@ -31,6 +33,8 @@ class _HomePageState extends State<HomePage> {
     _pratoController.dispose();
     _bebidaController.dispose();
     _doceController.dispose();
+    _paginaControlador.dispose();
+    _ementaTabControlador.dispose();
     super.dispose();
   }
 
@@ -88,6 +92,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _ementaTabControlador = TabController(length: 3, vsync: this);
     _carregarDados(); // Carrega o que estava guardado
     _carregarEmenta();
   }
@@ -112,19 +117,45 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
 
-      // O corpo agora muda conforme o índice
-      body: _indiceAtual == 0
-          ? _buildFormulario()
-          : _indiceAtual == 1
-              ? _buildLista()
-              : _buildEmenta(),
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragEnd: _indiceAtual == 2 ? null : (details) {
+          final v = details.primaryVelocity ?? 0;
+          if (v > 150 && _indiceAtual > 0) {
+            _paginaControlador.animateToPage(
+              _indiceAtual - 1,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          } else if (v < -150 && _indiceAtual < 2) {
+            _paginaControlador.animateToPage(
+              _indiceAtual + 1,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
+        },
+        child: PageView(
+          controller: _paginaControlador,
+          physics: const NeverScrollableScrollPhysics(),
+          onPageChanged: (index) => setState(() => _indiceAtual = index),
+          children: [
+            _buildFormulario(),
+            _buildLista(),
+            _buildEmenta(),
+          ],
+        ),
+      ),
 
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _indiceAtual, // Qual aba está marcada
+        currentIndex: _indiceAtual,
         onTap: (index) {
-          setState(() {
-            _indiceAtual = index; // Muda a aba quando clicas
-          });
+          setState(() => _indiceAtual = index);
+          _paginaControlador.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.edit_note), label: 'Pedir'),
@@ -575,21 +606,32 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildEmenta() {
-    return DefaultTabController(
-      length: 3,
-      child: Column(
-        children: [
-          TabBar(
-            labelColor: Colors.amber[800],
-            indicatorColor: Colors.amber,
-            tabs: const [
-              Tab(icon: Icon(Icons.restaurant), text: 'Pratos'),
-              Tab(icon: Icon(Icons.local_bar), text: 'Bebidas'),
-              Tab(icon: Icon(Icons.cake), text: 'Sobremesas'),
-            ],
-          ),
-          Expanded(
+    return Column(
+      children: [
+        TabBar(
+          controller: _ementaTabControlador,
+          labelColor: Colors.amber[800],
+          indicatorColor: Colors.amber,
+          tabs: const [
+            Tab(icon: Icon(Icons.restaurant), text: 'Pratos'),
+            Tab(icon: Icon(Icons.local_bar), text: 'Bebidas'),
+            Tab(icon: Icon(Icons.cake), text: 'Sobremesas'),
+          ],
+        ),
+        Expanded(
+          child: NotificationListener<OverscrollNotification>(
+            onNotification: (n) {
+              if (n.overscroll < 0 && _ementaTabControlador.index == 0) {
+                _paginaControlador.animateToPage(
+                  1,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              }
+              return false;
+            },
             child: TabBarView(
+              controller: _ementaTabControlador,
               children: [
                 _SecaoEmenta(
                   itens: _ementa.pratos,
@@ -655,8 +697,8 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -751,6 +793,11 @@ class _HomePageState extends State<HomePage> {
       _chaveFormulario = UniqueKey();
       _indiceAtual = 0;
     });
+    _paginaControlador.animateToPage(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _cancelarEdicao() {
@@ -794,6 +841,11 @@ class _HomePageState extends State<HomePage> {
         _chaveFormulario = UniqueKey();
         _indiceAtual = 1;
       });
+      _paginaControlador.animateToPage(
+        1,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
 
       //armezanar os dados no storage local
       _guardarDados();
