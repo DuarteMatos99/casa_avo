@@ -15,7 +15,8 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   // formularios no flutter precisam de uma key global
   final _formKey = GlobalKey<FormState>();
 
@@ -166,31 +167,29 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
       body: GestureDetector(
         behavior: HitTestBehavior.translucent,
-        onHorizontalDragEnd: _indiceAtual == 2 ? null : (details) {
-          final v = details.primaryVelocity ?? 0;
-          if (v > 150 && _indiceAtual > 0) {
-            _paginaControlador.animateToPage(
-              _indiceAtual - 1,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          } else if (v < -150 && _indiceAtual < 2) {
-            _paginaControlador.animateToPage(
-              _indiceAtual + 1,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          }
-        },
+        onHorizontalDragEnd: _indiceAtual == 2
+            ? null
+            : (details) {
+                final v = details.primaryVelocity ?? 0;
+                if (v > 150 && _indiceAtual > 0) {
+                  _paginaControlador.animateToPage(
+                    _indiceAtual - 1,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                } else if (v < -150 && _indiceAtual < 2) {
+                  _paginaControlador.animateToPage(
+                    _indiceAtual + 1,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                }
+              },
         child: PageView(
           controller: _paginaControlador,
           physics: const NeverScrollableScrollPhysics(),
           onPageChanged: (index) => setState(() => _indiceAtual = index),
-          children: [
-            _buildFormulario(),
-            _buildLista(),
-            _buildEmenta(),
-          ],
+          children: [_buildFormulario(), _buildLista(), _buildEmenta()],
         ),
       ),
 
@@ -249,8 +248,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _indicePedidoEmEdicao != null ? 'Editar pedido' : 'Novo pedido',
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      _indicePedidoEmEdicao != null
+                          ? 'Editar pedido'
+                          : 'Novo pedido',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -263,8 +267,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               TextFormField(
                 controller: _clienteController,
                 inputFormatters: [UpperCaseFirstLetterFormatter()],
-                decoration: _decoracaoCampo('Para quem é?', Icons.person_outline),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Nome obrigatório' : null,
+                decoration: _decoracaoCampo(
+                  'Para quem é?',
+                  Icons.person_outline,
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Nome obrigatório' : null,
               ),
               const SizedBox(height: 12),
               _campoAutoComplete(
@@ -301,13 +309,17 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   ),
                   onPressed: _salvarPedido,
                   child: Text(
-                    _indicePedidoEmEdicao != null ? "Guardar Pedido" : "Enviar Pedido",
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    _indicePedidoEmEdicao != null
+                        ? "Guardar Pedido"
+                        : "Enviar Pedido",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
               ),
-              if (_indicePedidoEmEdicao != null)
-                const SizedBox(height: 12),
+              if (_indicePedidoEmEdicao != null) const SizedBox(height: 12),
               if (_indicePedidoEmEdicao != null)
                 SizedBox(
                   width: double.infinity,
@@ -414,7 +426,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     context: context,
                     builder: (ctx) => AlertDialog(
                       title: const Text('Apagar pedido'),
-                      content: const Text('Tens a certeza que queres apagar este pedido?'),
+                      content: const Text(
+                        'Tens a certeza que queres apagar este pedido?',
+                      ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(ctx).pop(false),
@@ -422,7 +436,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                         ),
                         TextButton(
                           onPressed: () => Navigator.of(ctx).pop(true),
-                          child: const Text('Apagar', style: TextStyle(color: Colors.redAccent)),
+                          child: const Text(
+                            'Apagar',
+                            style: TextStyle(color: Colors.redAccent),
+                          ),
                         ),
                       ],
                     ),
@@ -432,11 +449,17 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   setState(() => _listaDePedidos.removeAt(index));
                   _guardarDados();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Pedido removido!'), duration: Duration(seconds: 1)),
+                    const SnackBar(
+                      content: Text('Pedido removido!'),
+                      duration: Duration(seconds: 1),
+                    ),
                   );
                 },
                 background: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  margin: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.redAccent,
                     borderRadius: BorderRadius.circular(12),
@@ -446,7 +469,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   child: const Icon(Icons.delete, color: Colors.white),
                 ),
                 secondaryBackground: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  margin: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blueGrey,
                     borderRadius: BorderRadius.circular(12),
@@ -456,7 +482,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   child: const Icon(Icons.edit, color: Colors.white),
                 ),
                 child: Card(
-                  margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  margin: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 4,
+                  ),
                   clipBehavior: Clip.antiAlias,
                   child: IntrinsicHeight(
                     child: Row(
@@ -486,11 +515,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         pedido.cliente,
-                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
                                               fontWeight: FontWeight.bold,
                                             ),
                                       ),
@@ -500,9 +533,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                                         runSpacing: 4,
                                         children: [
                                           if (pedido.prato.isNotEmpty)
-                                            _chip(Icons.restaurant, pedido.prato),
+                                            _chip(
+                                              Icons.restaurant,
+                                              pedido.prato,
+                                            ),
                                           if (pedido.bebida.isNotEmpty)
-                                            _chip(Icons.local_bar, pedido.bebida),
+                                            _chip(
+                                              Icons.local_bar,
+                                              pedido.bebida,
+                                            ),
                                           if (pedido.sobremesa.isNotEmpty)
                                             _chip(Icons.cake, pedido.sobremesa),
                                         ],
@@ -510,7 +549,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                                       const SizedBox(height: 6),
                                       Text(
                                         _tempoRelativo(pedido.dataCriacao),
-                                        style: Theme.of(context).textTheme.bodySmall,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
                                       ),
                                     ],
                                   ),
@@ -519,11 +560,17 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.edit_outlined, color: Colors.blueGrey),
+                                      icon: const Icon(
+                                        Icons.edit_outlined,
+                                        color: Colors.blueGrey,
+                                      ),
                                       onPressed: () => _editarPedido(index),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                      icon: const Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.redAccent,
+                                      ),
                                       onPressed: () => _confirmarApagar(index),
                                     ),
                                   ],
@@ -550,17 +597,22 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       for (final item in itens) {
         if (item.isNotEmpty) contagem[item] = (contagem[item] ?? 0) + 1;
       }
-      final ordenado = contagem.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+      final ordenado = contagem.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
       return Map.fromEntries(ordenado);
     }
 
     final pratos = contarItens(_listaDePedidos.map((p) => p.prato).toList());
     final bebidas = contarItens(_listaDePedidos.map((p) => p.bebida).toList());
-    final sobremesas = contarItens(_listaDePedidos.map((p) => p.sobremesa).toList());
+    final sobremesas = contarItens(
+      _listaDePedidos.map((p) => p.sobremesa).toList(),
+    );
     final total = _listaDePedidos.length;
 
     String textoResumoCompleto() {
-      final linhas = <String>['Resumo · $total ${total == 1 ? 'pedido' : 'pedidos'}'];
+      final linhas = <String>[
+        'Resumo · $total ${total == 1 ? 'pedido' : 'pedidos'}',
+      ];
       if (pratos.isNotEmpty) {
         linhas.add('\nPratos:');
         for (final e in pratos.entries) linhas.add('  (${e.value}×) ${e.key}');
@@ -571,7 +623,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       }
       if (sobremesas.isNotEmpty) {
         linhas.add('\nSobremesas:');
-        for (final e in sobremesas.entries) linhas.add('  (${e.value}×) ${e.key}');
+        for (final e in sobremesas.entries)
+          linhas.add('  (${e.value}×) ${e.key}');
       }
       return linhas.join('\n');
     }
@@ -579,7 +632,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     void copiarResumo() {
       Clipboard.setData(ClipboardData(text: textoResumoCompleto()));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Resumo copiado!'), duration: Duration(seconds: 1)),
+        const SnackBar(
+          content: Text('Resumo copiado!'),
+          duration: Duration(seconds: 1),
+        ),
       );
     }
 
@@ -605,11 +661,18 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                       Expanded(
                         child: Text(
                           'Resumo · $total ${total == 1 ? 'pedido' : 'pedidos'}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.copy, size: 18, color: Colors.black54),
+                        icon: const Icon(
+                          Icons.copy,
+                          size: 18,
+                          color: Colors.black54,
+                        ),
                         tooltip: 'Copiar resumo',
                         onPressed: () {
                           copiarResumo();
@@ -627,15 +690,27 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (pratos.isNotEmpty) ...[
-                          _secaoResumoCompleto(Icons.restaurant, 'Pratos', pratos),
+                          _secaoResumoCompleto(
+                            Icons.restaurant,
+                            'Pratos',
+                            pratos,
+                          ),
                           const SizedBox(height: 12),
                         ],
                         if (bebidas.isNotEmpty) ...[
-                          _secaoResumoCompleto(Icons.local_bar, 'Bebidas', bebidas),
+                          _secaoResumoCompleto(
+                            Icons.local_bar,
+                            'Bebidas',
+                            bebidas,
+                          ),
                           const SizedBox(height: 12),
                         ],
                         if (sobremesas.isNotEmpty)
-                          _secaoResumoCompleto(Icons.cake, 'Sobremesas', sobremesas),
+                          _secaoResumoCompleto(
+                            Icons.cake,
+                            'Sobremesas',
+                            sobremesas,
+                          ),
                       ],
                     ),
                   ),
@@ -663,11 +738,18 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   Expanded(
                     child: Text(
                       'Resumo · $total ${total == 1 ? 'pedido' : 'pedidos'}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.copy, size: 18, color: Colors.black54),
+                    icon: const Icon(
+                      Icons.copy,
+                      size: 18,
+                      color: Colors.black54,
+                    ),
                     onPressed: copiarResumo,
                     tooltip: 'Copiar resumo',
                     padding: EdgeInsets.zero,
@@ -685,7 +767,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _secaoResumoCompleto(IconData icone, String titulo, Map<String, int> contagem) {
+  Widget _secaoResumoCompleto(
+    IconData icone,
+    String titulo,
+    Map<String, int> contagem,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -693,14 +779,20 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           children: [
             Icon(icone, size: 16, color: Colors.grey[700]),
             const SizedBox(width: 6),
-            Text(titulo, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            Text(
+              titulo,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
           ],
         ),
         const SizedBox(height: 4),
         ...contagem.entries.map(
           (e) => Padding(
             padding: const EdgeInsets.only(left: 22, top: 2),
-            child: Text('(${e.value}×) ${e.key}', style: const TextStyle(fontSize: 13)),
+            child: Text(
+              '(${e.value}×) ${e.key}',
+              style: const TextStyle(fontSize: 13),
+            ),
           ),
         ),
       ],
@@ -708,7 +800,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   Widget _linhaResumo(IconData icone, Map<String, int> contagem) {
-    final texto = contagem.entries.map((e) => '(${e.value}×) ${e.key}').join('  ·  ');
+    final texto = contagem.entries
+        .map((e) => '(${e.value}×) ${e.key}')
+        .join('  ·  ');
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: Row(
@@ -762,13 +856,16 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   onAdicionar: (item) {
                     if (!_ementa.pratos.contains(item)) {
                       setState(() {
-                        _ementa = _ementa.copiarCom(pratos: [..._ementa.pratos, item]);
+                        _ementa = _ementa.copiarCom(
+                          pratos: [..._ementa.pratos, item],
+                        );
                       });
                       _guardarEmenta();
                     }
                   },
                   onRemover: (index) {
-                    final novos = List<String>.from(_ementa.pratos)..removeAt(index);
+                    final novos = List<String>.from(_ementa.pratos)
+                      ..removeAt(index);
                     setState(() => _ementa = _ementa.copiarCom(pratos: novos));
                     _guardarEmenta();
                   },
@@ -782,13 +879,16 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   onAdicionar: (item) {
                     if (!_ementa.bebidas.contains(item)) {
                       setState(() {
-                        _ementa = _ementa.copiarCom(bebidas: [..._ementa.bebidas, item]);
+                        _ementa = _ementa.copiarCom(
+                          bebidas: [..._ementa.bebidas, item],
+                        );
                       });
                       _guardarEmenta();
                     }
                   },
                   onRemover: (index) {
-                    final novos = List<String>.from(_ementa.bebidas)..removeAt(index);
+                    final novos = List<String>.from(_ementa.bebidas)
+                      ..removeAt(index);
                     setState(() => _ementa = _ementa.copiarCom(bebidas: novos));
                     _guardarEmenta();
                   },
@@ -802,15 +902,19 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   onAdicionar: (item) {
                     if (!_ementa.sobremesas.contains(item)) {
                       setState(() {
-                        _ementa =
-                            _ementa.copiarCom(sobremesas: [..._ementa.sobremesas, item]);
+                        _ementa = _ementa.copiarCom(
+                          sobremesas: [..._ementa.sobremesas, item],
+                        );
                       });
                       _guardarEmenta();
                     }
                   },
                   onRemover: (index) {
-                    final novos = List<String>.from(_ementa.sobremesas)..removeAt(index);
-                    setState(() => _ementa = _ementa.copiarCom(sobremesas: novos));
+                    final novos = List<String>.from(_ementa.sobremesas)
+                      ..removeAt(index);
+                    setState(
+                      () => _ementa = _ementa.copiarCom(sobremesas: novos),
+                    );
                     _guardarEmenta();
                   },
                   onApagarTodos: () {
@@ -850,7 +954,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Apagar todos', style: TextStyle(color: Colors.redAccent)),
+            child: const Text(
+              'Apagar todos',
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),
@@ -873,7 +980,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Apagar', style: TextStyle(color: Colors.redAccent)),
+            child: const Text(
+              'Apagar',
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),
@@ -887,7 +997,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Pedido removido!'), duration: Duration(seconds: 1)),
+          content: Text('Pedido removido!'),
+          duration: Duration(seconds: 1),
+        ),
       );
     }
   }
@@ -944,7 +1056,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
       setState(() {
         if (_indicePedidoEmEdicao != null) {
-          final dataOriginal = _listaDePedidos[_indicePedidoEmEdicao!].dataCriacao;
+          final dataOriginal =
+              _listaDePedidos[_indicePedidoEmEdicao!].dataCriacao;
           _listaDePedidos[_indicePedidoEmEdicao!] = Pedido(
             cliente: _clienteController.text,
             prato: prato,
@@ -985,7 +1098,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   Future<void> _ofereceAdicionarAEmenta(
-      String prato, String bebida, String sobremesa) async {
+    String prato,
+    String bebida,
+    String sobremesa,
+  ) async {
     final List<String> emFalta = [];
     if (prato.isNotEmpty && !_ementa.pratos.contains(prato)) {
       emFalta.add('Prato: $prato');
@@ -1029,7 +1145,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         _ementa = _ementa.copiarCom(bebidas: [..._ementa.bebidas, bebida]);
       }
       if (sobremesa.isNotEmpty && !_ementa.sobremesas.contains(sobremesa)) {
-        _ementa = _ementa.copiarCom(sobremesas: [..._ementa.sobremesas, sobremesa]);
+        _ementa = _ementa.copiarCom(
+          sobremesas: [..._ementa.sobremesas, sobremesa],
+        );
       }
     });
     _guardarEmenta();
@@ -1068,7 +1186,9 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Importar da ementa'),
-        content: const Text('Queres fazer upload de uma foto da ementa para extrair os itens automaticamente?'),
+        content: const Text(
+          'Queres fazer upload de uma foto da ementa para extrair os itens automaticamente?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -1105,7 +1225,9 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
 
         if (candidatos.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Nenhum texto reconhecido na imagem.')),
+            const SnackBar(
+              content: Text('Nenhum texto reconhecido na imagem.'),
+            ),
           );
           return;
         }
@@ -1120,17 +1242,57 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
   }
 
   static const _termosIgnorados = [
-    'segunda-feira', 'segunda', 'terça-feira', 'terca-feira', 'terça', 'terca',
-    'quarta-feira', 'quarta', 'quinta-feira', 'quinta', 'sexta-feira', 'sexta',
-    'sábado', 'sabado', 'domingo', 'reservas', 'pronto a comer',
-    'casa da avó', 'casa da avo', 'comida caseira',
-    'all images', 'all photos', 'reels', 'mentions',
-    'feita com', 'de sempre', 'e sabor', 'menu de',
+    'segunda-feira',
+    'segunda',
+    'terça-feira',
+    'terca-feira',
+    'terça',
+    'terca',
+    'quarta-feira',
+    'quarta',
+    'quinta-feira',
+    'quinta',
+    'sexta-feira',
+    'sexta',
+    'sábado',
+    'sabado',
+    'domingo',
+    'reservas',
+    'pronto a comer',
+    'casa da avó',
+    'casa da avo',
+    'comida caseira',
+    'all images',
+    'all photos',
+    'reels',
+    'mentions',
+    'feita com',
+    'de sempre',
+    'e sabor',
+    'menu de',
   ];
 
   static const _palavrasMinusculas = {
-    'de', 'da', 'do', 'das', 'dos', 'e', 'ou', 'a', 'o', 'as', 'os',
-    'em', 'com', 'para', 'por', 'que', 'ao', 'à', 'aos', 'às',
+    'de',
+    'da',
+    'do',
+    'das',
+    'dos',
+    'e',
+    'ou',
+    'a',
+    'o',
+    'as',
+    'os',
+    'em',
+    'com',
+    'para',
+    'por',
+    'que',
+    'ao',
+    'à',
+    'aos',
+    'às',
   };
 
   bool _linhaValida(String linha) {
@@ -1152,13 +1314,18 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
     final apenasLetras = texto.replaceAll(RegExp(r'[^a-zA-ZÀ-ÿ]'), '');
     if (apenasLetras.isNotEmpty && apenasLetras == apenasLetras.toUpperCase()) {
       final palavras = texto.split(' ');
-      return palavras.asMap().entries.map((e) {
-        final p = e.value;
-        if (p.isEmpty) return p;
-        final pLower = p.toLowerCase();
-        if (e.key > 0 && _palavrasMinusculas.contains(pLower)) return pLower;
-        return p[0].toUpperCase() + p.substring(1).toLowerCase();
-      }).join(' ');
+      return palavras
+          .asMap()
+          .entries
+          .map((e) {
+            final p = e.value;
+            if (p.isEmpty) return p;
+            final pLower = p.toLowerCase();
+            if (e.key > 0 && _palavrasMinusculas.contains(pLower))
+              return pLower;
+            return p[0].toUpperCase() + p.substring(1).toLowerCase();
+          })
+          .join(' ');
     }
     return texto[0].toUpperCase() + texto.substring(1);
   }
@@ -1202,7 +1369,10 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                         const Expanded(
                           child: Text(
                             'Seleciona os itens a adicionar',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
                         IconButton(
@@ -1218,7 +1388,8 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                       shrinkWrap: true,
                       itemCount: candidatos.length,
                       itemBuilder: (ctx, i) => ListTile(
-                        onTap: () => setEstado(() => selecionados[i] = !selecionados[i]),
+                        onTap: () =>
+                            setEstado(() => selecionados[i] = !selecionados[i]),
                         leading: Checkbox(
                           value: selecionados[i],
                           activeColor: const Color(0xFF8C292C),
@@ -1228,14 +1399,18 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                         title: Text(
                           candidatos[i],
                           style: TextStyle(
-                            color: selecionados[i] ? Colors.black87 : Colors.grey,
+                            color: selecionados[i]
+                                ? Colors.black87
+                                : Colors.grey,
                           ),
                         ),
                         trailing: IconButton(
                           icon: Icon(
                             Icons.edit_outlined,
                             size: 18,
-                            color: indiceEmEdicao == i ? const Color(0xFF8C292C) : Colors.blueGrey,
+                            color: indiceEmEdicao == i
+                                ? const Color(0xFF8C292C)
+                                : Colors.blueGrey,
                           ),
                           onPressed: () => setEstado(() {
                             indiceEmEdicao = i;
@@ -1260,7 +1435,9 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                             child: TextField(
                               controller: ctrlEdicao,
                               autofocus: true,
-                              inputFormatters: [UpperCaseFirstLetterFormatter()],
+                              inputFormatters: [
+                                UpperCaseFirstLetterFormatter(),
+                              ],
                               decoration: const InputDecoration(
                                 labelText: 'Editar item',
                                 border: OutlineInputBorder(),
@@ -1297,7 +1474,8 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                           ),
                           onPressed: () {
                             for (int i = 0; i < candidatos.length; i++) {
-                              if (selecionados[i]) widget.onAdicionar(candidatos[i]);
+                              if (selecionados[i])
+                                widget.onAdicionar(candidatos[i]);
                             }
                             Navigator.of(ctx).pop();
                           },
@@ -1341,9 +1519,15 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF8C292C), width: 2),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF8C292C),
+                        width: 2,
+                      ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
                   ),
                   onSubmitted: (val) {
                     if (val.isNotEmpty) {
@@ -1367,9 +1551,15 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8C292C)),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF8C292C),
+                        ),
                       )
-                    : const Icon(Icons.document_scanner, color: Color(0xFF8C292C)),
+                    : const Icon(
+                        Icons.document_scanner,
+                        color: Color(0xFF8C292C),
+                      ),
                 onPressed: _carregando ? null : _importarDaImagem,
                 tooltip: 'Importar da imagem',
               ),
@@ -1382,7 +1572,9 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                       context: context,
                       builder: (ctx) => AlertDialog(
                         title: const Text('Apagar todos'),
-                        content: const Text('Tens a certeza? Esta ação não pode ser desfeita.'),
+                        content: const Text(
+                          'Tens a certeza? Esta ação não pode ser desfeita.',
+                        ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(ctx).pop(false),
@@ -1390,7 +1582,10 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                           ),
                           TextButton(
                             onPressed: () => Navigator.of(ctx).pop(true),
-                            child: const Text('Apagar todos', style: TextStyle(color: Colors.redAccent)),
+                            child: const Text(
+                              'Apagar todos',
+                              style: TextStyle(color: Colors.redAccent),
+                            ),
                           ),
                         ],
                       ),
@@ -1409,7 +1604,10 @@ class _SecaoEmentaState extends State<_SecaoEmenta> {
                   itemBuilder: (context, index) => ListTile(
                     title: Text(widget.itens[index]),
                     trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                      ),
                       onPressed: () => widget.onRemover(index),
                     ),
                   ),
